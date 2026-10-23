@@ -1,0 +1,37 @@
+reddit:
+  subreddits: [worldnews, technology, science, news, politics, health]
+  posts_per_subreddit: 200
+  comments_per_post: 50
+  sleep_between_calls: 1.0      # seconds, stay well under the rate limit
+
+youtube:
+  queries: ["climate change", "vaccine", "elections", "artificial intelligence", "economy"]
+  videos_per_query: 20
+  comments_per_video: 100
+  sleep_between_calls: 0.5
+
+paths:
+  raw: data/raw
+  processed: data/processed
+
+sentiment:
+  model: cardiffnlp/twitter-xlm-roberta-base-sentiment
+  batch_size: 32
+  max_length: 128
+
+topics:
+  embedding_model: paraphrase-multilingual-MiniLM-L12-v2
+  min_topic_size: 15
+  nr_bins: 20
+
+misinfo:
+  dataset: liar
+  max_features: 50000
+
+elasticsearch:
+  index: socintel-posts
+
+alerts:
+  neg_spike_zscore: 2.0     # flag a topic-day when negative share is this many std above its mean
+  min_posts_per_day: 20
+  influencer_top_n: 50

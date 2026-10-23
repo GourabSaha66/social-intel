@@ -1,0 +1,22 @@
+pandas>=2.0
+numpy>=1.26
+scikit-learn>=1.4
+networkx>=3.2
+pyyaml
+python-dotenv
+requests
+praw>=7.7
+py3langid
+emoji>=2.10
+elasticsearch>=8.12,<9
+neo4j>=5.20
+matplotlib
+datasets            # Hugging Face datasets (LIAR, TweetEval, etc.)
+transformers>=4.40
+torch
+bertopic>=0.16
+sentence-transformers
+pytest
+# optional, only for the Spark stage (see src/socintel/spark_stage.py)
+# pyspark==3.5.1
+# spark-nlp==5.3.3
