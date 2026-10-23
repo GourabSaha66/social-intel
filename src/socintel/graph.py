@@ -54,6 +54,20 @@ def rank_users(g, seed=42):
     return out.sort_values("pagerank", ascending=False).reset_index(drop=True)
 
 
+def snap_edges(path, nrows=None):
+    """SNAP Reddit Hyperlink Network (soc-redditHyperlinks-title.tsv / -body.tsv).
+    Columns: SOURCE_SUBREDDIT, TARGET_SUBREDDIT, POST_ID, TIMESTAMP, LINK_SENTIMENT, PROPERTIES.
+    Nodes are subreddits (not people). weight = number of hyperlinks, sent = mean link sentiment
+    (+1 positive / -1 negative). Published academic dataset from Stanford SNAP.
+    """
+    d = pd.read_csv(path, sep="\t", nrows=nrows,
+                    usecols=["SOURCE_SUBREDDIT", "TARGET_SUBREDDIT", "LINK_SENTIMENT"])
+    d = d[d["SOURCE_SUBREDDIT"] != d["TARGET_SUBREDDIT"]]
+    e = (d.groupby(["SOURCE_SUBREDDIT", "TARGET_SUBREDDIT"])
+          .agg(weight=("LINK_SENTIMENT", "size"), sent=("LINK_SENTIMENT", "mean")).reset_index())
+    return e.rename(columns={"SOURCE_SUBREDDIT": "src", "TARGET_SUBREDDIT": "dst"})
+
+
 def graph_summary(g):
     und = g.to_undirected()
     biggest = max(nx.connected_components(und), key=len) if und.number_of_nodes() else set()

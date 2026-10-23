@@ -69,6 +69,29 @@ def evaluate(y_true, y_pred):
     }
 
 
+STARS_TO_LABEL = {0: "negative", 1: "negative", 2: "neutral", 3: "positive", 4: "positive"}
+
+
+def eval_on_amazon(clf, langs=("en", "de", "es", "fr", "ja", "zh"), n=1000, seed=42):
+    """accuracy / macro-F1 per language on the Multilingual Amazon Reviews Corpus test split.
+    stars 1-2 = negative, 3 = neutral, 4-5 = positive. Languages that fail to load are skipped.
+    (dataset id is configurable in config.yaml; I could not test the download from the dev box.)"""
+    from datasets import load_dataset
+    out = {}
+    for lang in langs:
+        try:
+            ds = load_dataset("mteb/amazon_reviews_multi", lang, split="test")
+        except Exception as e:
+            print(f"amazon {lang}: could not load ({e})")
+            continue
+        df = ds.to_pandas().sample(min(n, len(ds)), random_state=seed)
+        gold = df["label"].map(STARS_TO_LABEL)
+        pred, _ = predict(df["text"].tolist(), clf)
+        res = evaluate(gold, pred)
+        out[lang] = {"accuracy": res["accuracy"], "macro_f1": res["macro_f1"], "n": len(df)}
+    return out
+
+
 def eval_on_tweeteval(clf, n=2000, seed=42):
     """sanity check against the English TweetEval sentiment test split (0=neg,1=neu,2=pos)."""
     from datasets import load_dataset

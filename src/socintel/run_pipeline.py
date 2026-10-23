@@ -33,7 +33,7 @@ def log_metric(cfg, key, value):
 
 
 def stage_clean(cfg):
-    df = normalize.build_table(cfg["paths"]["raw"])
+    df = normalize.build_table(cfg["paths"]["raw"], anonymize_authors=cfg.get("anonymize_authors", True))
     print("raw rows:", len(df))
     write_jsonl(df, p(cfg, "00_normalized.jsonl"))      # also the input for spark_stage.py
     df = clean.clean_table(df)
@@ -111,11 +111,11 @@ def stage_alerts(cfg):
     df = read_jsonl(p(cfg, "05_misinfo.jsonl"))
     ac = cfg["alerts"]
     a1 = alerts.negative_spikes(df, ac["neg_spike_zscore"], ac["min_posts_per_day"])
-    a2 = alerts.risky_influencers(df, ac["influencer_top_n"])
+    a2 = alerts.flagged_high_reach_posts(df, ac["influencer_top_n"])
     a1.to_csv(p(cfg, "alerts_neg_spikes.csv"), index=False)
-    a2.to_csv(p(cfg, "alerts_influencer_misinfo.csv"), index=False)
-    log_metric(cfg, "alerts", {"negative_spikes": len(a1), "influencer_misinfo": len(a2)})
-    print("alerts:", len(a1), "spikes,", len(a2), "risky influencer posts")
+    a2.to_csv(p(cfg, "alerts_flagged_high_reach.csv"), index=False)
+    log_metric(cfg, "alerts", {"negative_spikes": len(a1), "flagged_high_reach": len(a2)})
+    print("alerts:", len(a1), "spikes,", len(a2), "flagged high-reach posts")
 
 
 def stage_index(cfg):
@@ -136,14 +136,46 @@ def stage_index(cfg):
     print(f"indexed {ok} docs, {len(errs)} errors")
 
 
+def stage_benchmarks(cfg):
+    """accuracy numbers on public datasets (no live data needed):
+    TweetEval + Multilingual Amazon Reviews for sentiment, SNAP for graph scale."""
+    bc = cfg["benchmarks"]
+    sc = cfg["sentiment"]
+    clf = sentiment.load_pipeline(sc["model"])
+    try:
+        ev = sentiment.eval_on_tweeteval(clf, n=bc["tweeteval_n"])
+        print("TweetEval:", {k: round(ev[k], 3) for k in ("accuracy", "macro_f1")})
+        log_metric(cfg, "bench_tweeteval", {k: ev[k] for k in ("accuracy", "macro_f1")})
+    except Exception as e:
+        print("TweetEval skipped:", e)
+    am = sentiment.eval_on_amazon(clf, bc["amazon_langs"], bc["amazon_n"])
+    for lang, r in am.items():
+        print(f"amazon {lang}: acc={r['accuracy']:.3f} f1={r['macro_f1']:.3f} (n={r['n']})")
+    log_metric(cfg, "bench_amazon_by_language", am)
+
+    snap = bc["snap_path"]
+    if os.path.exists(snap):
+        edges = graph.snap_edges(snap)
+        g = graph.build_graph(edges)
+        ranks = graph.rank_users(g)
+        summ = graph.graph_summary(g)
+        summ["modularity"] = graph.modularity(g, ranks)
+        print("SNAP graph:", summ)
+        print(ranks.head(10)[["user", "pagerank", "community"]])
+        ranks.head(100).to_csv(p(cfg, "snap_top_subreddits.csv"), index=False)
+        log_metric(cfg, "bench_snap_graph", summ)
+    else:
+        print(f"SNAP file not found at {snap} - download it from snap.stanford.edu/data/soc-RedditHyperlinks.html")
+
+
 FUNCS = {"clean": stage_clean, "sentiment": stage_sentiment, "topics": stage_topics,
          "graph": stage_graph, "misinfo": stage_misinfo, "alerts": stage_alerts,
-         "index": stage_index}
+         "index": stage_index, "benchmarks": stage_benchmarks}
 
 
 def main():
     ap = argparse.ArgumentParser()
-    ap.add_argument("stages", nargs="+", choices=STAGES + ["all"])
+    ap.add_argument("stages", nargs="+", choices=STAGES + ["benchmarks", "all"])
     ap.add_argument("--config", default="config.yaml")
     args = ap.parse_args()
     cfg = load_config(args.config)
