@@ -21,10 +21,12 @@ def negative_spikes(df, z_thresh=2.0, min_posts=20, freq="D"):
     return out.sort_values("z", ascending=False)
 
 
-def risky_influencers(df, top_n=50, misinfo_thresh=0.7):
-    """posts by top-PageRank authors that the classifier scores as likely misleading."""
+def flagged_high_reach_posts(df, top_n=50, misinfo_thresh=0.7):
+    """posts the classifier flags, written by accounts in the top-PageRank group.
+    This is about the content for review, not a judgement on the account: authors are
+    hashed ids and the score only says 'resembles claims rated misleading in LIAR'."""
     top = (df.drop_duplicates("author").nlargest(top_n, "author_pagerank")["author"])
     d = df[df["author"].isin(top) & (df["misinfo_prob"] >= misinfo_thresh)].copy()
-    d["alert"] = "influencer_misinfo"
+    d["alert"] = "flagged_high_reach_content"
     return d.sort_values("misinfo_prob", ascending=False)[
         ["alert", "post_id", "author", "author_pagerank", "misinfo_prob", "topic_label", "clean_text"]]
