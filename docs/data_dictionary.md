@@ -4,12 +4,12 @@
 
 One file per Reddit submission or YouTube video, written exactly as collected.
 
-**Reddit** (`reddit_<subreddit>_<id>_<ms>.json`): `id, subreddit, author, title, selftext, created_utc, score,
+**Reddit** (only if approved; disabled by default) (`reddit_<subreddit>_<id>_<ms>.json`): `id, subreddit, author, title, selftext, created_utc, score,
 num_comments, url, comments[]` where each comment has `id, author, body, created_utc, score, parent_id`
 (`t3_` prefix = reply to the submission, `t1_` = reply to a comment).
 
 **YouTube** (`youtube_<videoId>_<ms>.json`): `query`, `video` (the `search.list` item), `comments`
-(raw `commentThreads.list` items).
+(raw `commentThreads.list` items, including up to 5 inline replies per thread).
 
 ## Shared schema (one row per post or comment)
 
@@ -18,7 +18,7 @@ num_comments, url, comments[]` where each comment has `id, author, body, created
 | post_id | keyword | `r_` or `y_` prefix + platform id, unique |
 | source | keyword | reddit / youtube |
 | kind | keyword | post / comment |
-| author | keyword | username or channel name |
+| author | keyword | salted hash of the username/channel (`u_xxxxxxxxxx`); see `anonymize_authors` |
 | created_utc (`created` in ES) | int / date | UTC |
 | text | text | original text |
 | clean_text | text | URLs and mentions stripped, emojis converted to words |
@@ -39,7 +39,7 @@ plus `metrics.json` (all numbers quoted in the README/slides), `topics_over_time
 
 ## External APIs
 
-- **Reddit** via PRAW (OAuth script app). PRAW sleeps automatically on rate limits; we add 1s between submissions.
+- **Reddit** via PRAW, disabled by default: Reddit requires approval for data access.
 - **YouTube Data API v3**: 10,000 quota units per day by default. `search.list` costs 100, `commentThreads.list` costs 1.
   The collector stops cleanly on `quotaExceeded`.
 

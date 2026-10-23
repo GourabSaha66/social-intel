@@ -4,13 +4,14 @@
 > Do not quote numbers that the pipeline did not produce.
 
 ## Data collected
-- Reddit submissions / comments: _
-- YouTube videos / comments: _
+- YouTube videos / comments / replies: _
+- Public benchmarks used: TweetEval, Amazon multilingual, LIAR, SNAP
 - After cleaning: _ rows, language mix: _ (`metrics.json` -> `clean`)
 
 ## Sentiment
 - Label distribution on our data: _
-- TweetEval (English test sample) accuracy / macro-F1: _ / _  (`sentiment_tweeteval`)
+- TweetEval (English test sample) accuracy / macro-F1: _ / _  (`bench_tweeteval`)
+- Multilingual Amazon Reviews, accuracy / macro-F1 per language: _ (`bench_amazon_by_language`)
 - Throughput (docs/sec on CPU or GPU used): _
 - Observations: sentiment over time chart, any events visible, languages where it looks weak.
 
@@ -20,7 +21,8 @@
 - Topics that rose/fell: _ (`topics_over_time.csv`)
 
 ## Graph
-- Nodes / edges / density / largest component / modularity: _ (`graph`)
+- YouTube reply graph: nodes / edges / density / largest component / modularity: _ (`graph`)
+- SNAP subreddit graph at scale: _ (`bench_snap_graph`), top subreddits by PageRank: _ (`snap_top_subreddits.csv`)
 - Top 10 influencers by PageRank and what they posted: _ (`user_ranks.csv`)
 
 ## Misinformation (LIAR, binary)
@@ -36,7 +38,7 @@
 - Docs indexed, errors, docs/sec, sample query latency: _ (`elasticsearch`)
 
 ## Alerts
-- Negative-sentiment spikes found: _; risky influencer posts: _ (`alerts`)
+- Negative-sentiment spikes found: _; flagged high-reach posts: _ (`alerts`)
 
 ## Challenges
 _Rate limits, sparse graph, noisy short comments, language ID on short text, etc. Write what actually happened._
