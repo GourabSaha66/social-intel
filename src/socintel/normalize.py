@@ -1,12 +1,16 @@
 """Turn the raw reddit/youtube json dumps into one flat table that follows schema.Post."""
 
 import calendar
+import hashlib
+import os
 import time
 
 import pandas as pd
 
 from .io_utils import iter_raw
 from .schema import CORE_FIELDS
+
+KEEP_AS_IS = {"[deleted]", "unknown"}     # graph.py already skips these
 
 
 def _yt_ts(s):
@@ -45,10 +49,27 @@ def youtube_rows(raw):
                          created_utc=_yt_ts(cs["publishedAt"]), text=cs["textDisplay"],
                          parent_id=f"y_{vid}", thread_id=vid, community=raw["query"],
                          score=cs.get("likeCount", 0)))
+        for rep in item.get("replies", {}).get("comments", []):
+            rs = rep["snippet"]
+            rows.append(dict(post_id=f"y_{rep['id']}", source="youtube", kind="comment",
+                             author=rs.get("authorDisplayName", "unknown"),
+                             created_utc=_yt_ts(rs["publishedAt"]), text=rs["textDisplay"],
+                             parent_id=f"y_{top['id']}", thread_id=vid, community=raw["query"],
+                             score=rs.get("likeCount", 0)))
     return rows
 
 
-def build_table(raw_dir):
+def anonymize(df, salt=None):
+    """replace author names with a salted hash. same person -> same id, so the graph still
+    works, but nobody's handle ends up in our stored files, dashboards or slides."""
+    salt = salt if salt is not None else os.environ.get("AUTHOR_SALT", "socintel")
+    df = df.copy()
+    df["author"] = df["author"].map(
+        lambda a: a if a in KEEP_AS_IS else "u_" + hashlib.sha256((salt + str(a)).encode()).hexdigest()[:10])
+    return df
+
+
+def build_table(raw_dir, anonymize_authors=True, salt=None):
     rows = []
     for name, raw in iter_raw(raw_dir):
         try:
@@ -60,4 +81,6 @@ def build_table(raw_dir):
             print(f"malformed file {name}: missing {e}")
     df = pd.DataFrame(rows, columns=CORE_FIELDS)
     df = df.drop_duplicates("post_id").reset_index(drop=True)
+    if anonymize_authors:
+        df = anonymize(df, salt)
     return df

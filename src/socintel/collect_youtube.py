@@ -40,7 +40,9 @@ def search_videos(query, n):
 def fetch_comments(video_id, n):
     comments, token = [], None
     while len(comments) < n:
-        params = {"part": "snippet", "videoId": video_id, "maxResults": min(100, n - len(comments)),
+        # "replies" brings up to 5 replies per thread in the same call (no extra quota),
+        # and replies are what give us edges between users for the graph stage
+        params = {"part": "snippet,replies", "videoId": video_id, "maxResults": min(100, n - len(comments)),
                   "textFormat": "plainText"}
         if token:
             params["pageToken"] = token
