@@ -71,13 +71,14 @@ def test_no_spike_when_below_min_posts():
     assert out.empty
 
 
-def test_risky_influencer_filter():
+def test_flagged_high_reach_filter():
     df = pd.DataFrame({
         "post_id": ["1", "2", "3"], "author": ["big", "big", "small"],
         "author_pagerank": [0.5, 0.5, 0.001], "misinfo_prob": [0.9, 0.2, 0.95],
         "topic_label": ["a", "a", "a"], "clean_text": ["x", "y", "z"]})
-    out = alerts.risky_influencers(df, top_n=1, misinfo_thresh=0.7)
+    out = alerts.flagged_high_reach_posts(df, top_n=1, misinfo_thresh=0.7)
     assert out["post_id"].tolist() == ["1"]
+    assert out["alert"].iloc[0] == "flagged_high_reach_content"
 
 
 # ---------- topics (pandas helpers) ----------
