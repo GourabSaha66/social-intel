@@ -51,6 +51,10 @@ def submission_to_raw(sub, comments_limit):
 def collect(cfg=None):
     cfg = cfg or load_config()
     rc = cfg["reddit"]
+    if not rc.get("enabled", False):
+        print("Reddit collection is disabled in config.yaml. Reddit requires explicit approval for "
+              "data access (Responsible Builder Policy); only enable this once you have it.")
+        return
     reddit = get_client()
     out = cfg["paths"]["raw"]
     n = 0

@@ -1,4 +1,7 @@
+# Reddit data needs approval from Reddit (see README, "Data sources and compliance").
+# It stays off unless you have that approval.
 reddit:
+  enabled: false
   subreddits: [worldnews, technology, science, news, politics, health]
   posts_per_subreddit: 200
   comments_per_post: 50
@@ -7,8 +10,11 @@ reddit:
 youtube:
   queries: ["climate change", "vaccine", "elections", "artificial intelligence", "economy"]
   videos_per_query: 20
-  comments_per_video: 100
+  comments_per_video: 200
   sleep_between_calls: 0.5
+
+# hash author names before anything is stored/indexed (set AUTHOR_SALT in .env)
+anonymize_authors: true
 
 paths:
   raw: data/raw
@@ -18,6 +24,13 @@ sentiment:
   model: cardiffnlp/twitter-xlm-roberta-base-sentiment
   batch_size: 32
   max_length: 128
+
+# accuracy numbers from public datasets, run with: python -m socintel.run_pipeline benchmarks
+benchmarks:
+  tweeteval_n: 2000
+  amazon_langs: [en, de, es, fr, ja, zh]
+  amazon_n: 1000
+  snap_path: data/snap/soc-redditHyperlinks-title.tsv
 
 topics:
   embedding_model: paraphrase-multilingual-MiniLM-L12-v2
