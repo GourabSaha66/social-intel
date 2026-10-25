@@ -17,6 +17,9 @@ torch
 bertopic>=0.16
 sentence-transformers
 pytest
+sentencepiece
+protobuf
+tiktoken
 # optional, only for the Spark stage (see src/socintel/spark_stage.py)
 # pyspark==3.5.1
 # spark-nlp==5.3.3

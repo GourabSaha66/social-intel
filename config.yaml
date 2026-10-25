@@ -8,9 +8,11 @@ reddit:
   sleep_between_calls: 1.0      # seconds, stay well under the rate limit
 
 youtube:
-  queries: ["climate change", "vaccine", "elections", "artificial intelligence", "economy"]
-  videos_per_query: 20
-  comments_per_video: 200
+  queries: ["climate change", "vaccine safety", "election results", "artificial intelligence jobs",
+            "inflation economy", "Ukraine war", "bitcoin price", "fact check", "conspiracy theory",
+            "भारत समाचार", "noticias política", "nachrichten politik"]
+  videos_per_query: 20          # 12 x 20 = ~240 videos, ~1,700 quota units of the 10,000/day
+  comments_per_video: 50        # top-level threads; up to 5 replies each come along for free
   sleep_between_calls: 0.5
 
 # hash author names before anything is stored/indexed (set AUTHOR_SALT in .env)
@@ -45,6 +47,7 @@ elasticsearch:
   index: socintel-posts
 
 alerts:
-  neg_spike_zscore: 2.0     # flag a topic-day when negative share is this many std above its mean
-  min_posts_per_day: 20
+  neg_spike_zscore: 2.0     # flag a topic-week when negative share is this many std above its mean
+  freq: W                   # bucket size: D, W or M. Comments span years, so daily buckets are too thin
+  min_posts: 15             # a topic-week needs at least this many posts to be judged
   influencer_top_n: 50

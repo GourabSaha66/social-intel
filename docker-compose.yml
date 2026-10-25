@@ -21,6 +21,7 @@ services:
     container_name: si-kibana
     environment:
       - ELASTICSEARCH_HOSTS=http://elasticsearch:9200
+      - NODE_OPTIONS=--max-old-space-size=768
     ports:
       - "5601:5601"
     depends_on:
@@ -30,8 +31,14 @@ services:
   neo4j:
     image: neo4j:5.20
     container_name: si-neo4j
+    # not started by default (8 GB machines can't run all three at once):
+    #   docker compose --profile graph up -d neo4j
+    profiles: ["graph"]
     environment:
       - NEO4J_AUTH=neo4j/${NEO4J_PASSWORD:-changeme123}
+      - NEO4J_server_memory_heap_initial__size=256m
+      - NEO4J_server_memory_heap_max__size=512m
+      - NEO4J_server_memory_pagecache_size=128m
     ports:
       - "7474:7474"   # browser
       - "7687:7687"   # bolt
