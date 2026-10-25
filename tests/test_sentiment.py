@@ -57,3 +57,15 @@ def test_evaluate_perfect_and_imperfect():
     assert sentiment.evaluate(labs, labs)["accuracy"] == 1.0
     res = sentiment.evaluate(labs, ["negative", "neutral", "positive", "negative"])
     assert res["accuracy"] == 0.75
+
+
+def test_predict_keeps_input_order_when_batches_are_length_sorted():
+    # lengths are deliberately mixed so the internal shortest-first order differs from input order
+    texts = ["love " + "x" * 40, "hate", "meh " + "y" * 90, "love", "hate " + "z" * 15, "meh"]
+    labels, scores = sentiment.predict(texts, fake_clf, batch_size=2)
+    assert labels == ["positive", "negative", "neutral", "positive", "negative", "neutral"]
+    assert scores == [0.9, 0.8, 0.6, 0.9, 0.8, 0.6]
+
+
+def test_predict_empty_input():
+    assert sentiment.predict([], fake_clf) == ([], [])

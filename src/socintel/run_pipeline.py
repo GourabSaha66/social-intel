@@ -64,35 +64,60 @@ def stage_sentiment(cfg):
 def stage_topics(cfg):
     df = read_jsonl(p(cfg, "02_sentiment.jsonl"))
     tc = cfg["topics"]
-    docs = df["clean_text"].tolist()
+    docs_all = df["text"].map(clean.topic_text)
+    mask = docs_all.str.len() >= 3              # emoji-only / empty comments can't have a topic
+    docs = docs_all[mask].tolist()
     model, tids = topics.fit_topics(docs, tc["embedding_model"], tc["min_topic_size"])
-    df = topics.add_topics(df, model, tids)
+    col = pd.Series(-1, index=df.index)
+    col[mask] = tids
+    df = topics.add_topics(df, model, col.tolist())
     write_jsonl(df, p(cfg, "03_topics.jsonl"))
-    tot = topics.topics_over_time(model, docs, df["created_utc"].tolist(), tc["nr_bins"])
+    tot = topics.topics_over_time(model, docs, df.loc[mask, "created_utc"].tolist(), tc["nr_bins"])
     tot.to_csv(p(cfg, "topics_over_time.csv"), index=False)
     model.get_topic_info().to_csv(p(cfg, "topic_info.csv"), index=False)
     n_topics = int((model.get_topic_info()["Topic"] != -1).sum())
     log_metric(cfg, "topics", {"n_topics": n_topics, "outlier_share": float((df["topic_id"] == -1).mean())})
 
 
+def _graph_summary(g, ranks):
+    summ = graph.graph_summary(g)
+    summ["modularity"] = graph.modularity(g, ranks) if len(ranks) and g.number_of_edges() else None
+    return summ
+
+
 def stage_graph(cfg):
     df = read_jsonl(p(cfg, "03_topics.jsonl"))
+    creators = set(df.loc[df["kind"] == "post", "author"])
+
+    # 1) full graph: everyone -> whoever they answered, including commenter -> video owner.
+    #    Owners dominate this one by construction; it is what we load into Neo4j.
     edges = graph.build_edges(df)
     g = graph.build_graph(edges)
     ranks = graph.rank_users(g)
-    summ = graph.graph_summary(g)
-    summ["modularity"] = graph.modularity(g, ranks) if len(ranks) else None
-    print(summ)
+    ranks["role"] = ranks["user"].map(lambda u: "creator" if u in creators else "commenter")
+    summ = _graph_summary(g, ranks)
+    print("full graph:", summ)
     edges.to_csv(p(cfg, "edges.csv"), index=False)
     ranks.to_csv(p(cfg, "user_ranks.csv"), index=False)
     log_metric(cfg, "graph", summ)
+
+    # 2) replies-only graph (commenter -> commenter). This one ranks "influencers".
+    e2 = graph.build_edges(df, replies_only=True)
+    g2 = graph.build_graph(e2)
+    r2 = graph.rank_users(g2)
+    summ2 = _graph_summary(g2, r2)
+    print("replies-only graph:", summ2)
+    e2.to_csv(p(cfg, "edges_replies.csv"), index=False)
+    r2.to_csv(p(cfg, "user_ranks_replies.csv"), index=False)
+    log_metric(cfg, "graph_replies_only", summ2)
+
     try:
         graph.load_into_neo4j(edges, ranks, graph.neo4j_driver())
     except Exception as e:
         print("Neo4j load failed (is the container up?):", e)
-    r = ranks.set_index("user")
-    df["author_pagerank"] = df["author"].map(r["pagerank"])
-    df["author_community"] = df["author"].map(r["community"])
+    r = r2.set_index("user")
+    df["author_pagerank"] = df["author"].map(r["pagerank"]) if len(r2) else None
+    df["author_community"] = df["author"].map(r["community"]) if len(r2) else None
     write_jsonl(df, p(cfg, "04_graph.jsonl"))
 
 
@@ -110,11 +135,16 @@ def stage_misinfo(cfg):
 def stage_alerts(cfg):
     df = read_jsonl(p(cfg, "05_misinfo.jsonl"))
     ac = cfg["alerts"]
-    a1 = alerts.negative_spikes(df, ac["neg_spike_zscore"], ac["min_posts_per_day"])
+    freq = ac.get("freq", "W")
+    min_posts = ac.get("min_posts", ac.get("min_posts_per_day", 15))
+    elig = alerts.eligible_buckets(df, min_posts, freq)
+    print(f"{elig} (topic, {freq}) buckets have >= {min_posts} posts and can be judged")
+    a1 = alerts.negative_spikes(df, ac["neg_spike_zscore"], min_posts, freq)
     a2 = alerts.flagged_high_reach_posts(df, ac["influencer_top_n"])
     a1.to_csv(p(cfg, "alerts_neg_spikes.csv"), index=False)
     a2.to_csv(p(cfg, "alerts_flagged_high_reach.csv"), index=False)
-    log_metric(cfg, "alerts", {"negative_spikes": len(a1), "flagged_high_reach": len(a2)})
+    log_metric(cfg, "alerts", {"negative_spikes": len(a1), "flagged_high_reach": len(a2),
+                               "eligible_buckets": elig, "freq": freq, "min_posts": min_posts})
     print("alerts:", len(a1), "spikes,", len(a2), "flagged high-reach posts")
 
 

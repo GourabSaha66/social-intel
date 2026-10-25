@@ -6,20 +6,40 @@ instead of forcing them into a topic.
 """
 
 import pandas as pd
+from sklearn.feature_extraction.text import ENGLISH_STOP_WORDS
+
+# Filler words of the other languages in our data. They only affect how topics are *named*;
+# without them a whole topic gets called "hai_ka_bhi_ko".
+EXTRA_STOP = [
+    # Hinglish
+    "hai", "hain", "ka", "ke", "ki", "ko", "se", "mein", "bhi", "aur", "nahi", "nhi", "tha", "thi",
+    "kya", "ye", "yeh", "ho", "hoga", "par", "ne", "wo", "woh", "bahut", "kar", "hi", "toh",
+    # romanized Telugu
+    "lo", "ni", "kuda", "ra", "ayithe", "vundhi", "chesindhi", "ante", "ela",
+    # German
+    "der", "das", "ist", "nicht", "ein", "und", "ich", "sie", "zu", "den", "mit", "auf", "nur", "auch", "wir",
+    # Spanish / Portuguese
+    "que", "de", "la", "el", "en", "los", "las", "para", "por", "con", "una", "un", "del", "mas",
+    "não", "nao", "uma", "um", "os", "da", "em", "com", "mais",
+]
+STOP_WORDS = sorted(set(ENGLISH_STOP_WORDS) | set(EXTRA_STOP))
 
 
 def fit_topics(docs, embedding_model="paraphrase-multilingual-MiniLM-L12-v2",
                min_topic_size=15, seed=42):
     from bertopic import BERTopic
     from sentence_transformers import SentenceTransformer
+    from sklearn.feature_extraction.text import CountVectorizer
     from umap import UMAP
 
     # fixed seed so reruns give the same topics (UMAP is stochastic)
     umap_model = UMAP(n_neighbors=15, n_components=5, min_dist=0.0, metric="cosine",
                       random_state=seed)
     emb = SentenceTransformer(embedding_model)
-    model = BERTopic(embedding_model=emb, umap_model=umap_model, min_topic_size=min_topic_size,
-                     calculate_probabilities=False, verbose=True)
+    # only affects how topics are *named* (c-TF-IDF); stop-words out so names aren't "the_to_and"
+    vec = CountVectorizer(stop_words=STOP_WORDS, ngram_range=(1, 2), min_df=2)
+    model = BERTopic(embedding_model=emb, umap_model=umap_model, vectorizer_model=vec,
+                     min_topic_size=min_topic_size, calculate_probabilities=False, verbose=True)
     topics, _ = model.fit_transform(docs)
     return model, topics
 
@@ -49,7 +69,7 @@ def topics_over_time(model, docs, timestamps, nr_bins=20):
 
 def topic_volume(df, freq="D"):
     d = df[df["topic_id"] != -1].copy()
-    d["bucket"] = pd.to_datetime(d["created_utc"], unit="s").dt.floor(freq)
+    d["bucket"] = pd.to_datetime(d["created_utc"], unit="s").dt.to_period(freq).dt.start_time
     return d.groupby(["bucket", "topic_id", "topic_label"]).size().rename("n").reset_index()
 
 

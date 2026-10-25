@@ -13,9 +13,15 @@ import pandas as pd
 SKIP_AUTHORS = {"[deleted]", "AutoModerator", "unknown", "None"}
 
 
-def build_edges(df):
-    """replier -> parent author, using parent_id lookups inside the table."""
+def build_edges(df, replies_only=False):
+    """replier -> parent author, using parent_id lookups inside the table.
+
+    replies_only=True drops edges whose parent is a *post* (a YouTube video / Reddit submission),
+    i.e. keeps only comment-to-comment replies. Without this, every commenter points at the video
+    owner and the owners trivially top any influence ranking.
+    """
     author_of = dict(zip(df["post_id"], df["author"]))
+    kind_of = dict(zip(df["post_id"], df["kind"])) if "kind" in df.columns else {}
     pairs = Counter()
     for pid, author in zip(df["parent_id"], df["author"]):
         if pid is None or pd.isna(pid):
@@ -24,6 +30,8 @@ def build_edges(df):
         if parent_author is None or parent_author == author:       # unknown parent / self reply
             continue
         if author in SKIP_AUTHORS or parent_author in SKIP_AUTHORS:
+            continue
+        if replies_only and kind_of.get(pid) == "post":
             continue
         pairs[(author, parent_author)] += 1
     return pd.DataFrame([(a, b, w) for (a, b), w in pairs.items()],
@@ -70,11 +78,14 @@ def snap_edges(path, nrows=None):
 
 def graph_summary(g):
     und = g.to_undirected()
-    biggest = max(nx.connected_components(und), key=len) if und.number_of_nodes() else set()
+    comps = list(nx.connected_components(und)) if und.number_of_nodes() else []
+    biggest = max(comps, key=len) if comps else set()
     return {
         "nodes": g.number_of_nodes(),
         "edges": g.number_of_edges(),
         "density": nx.density(g),
+        "n_components": len(comps),
+        "largest_component_nodes": len(biggest),
         "largest_component_share": len(biggest) / max(g.number_of_nodes(), 1),
     }
 

@@ -48,3 +48,34 @@ def test_clean_table_drops_removed_and_dupes():
     assert len(out) == 2
     assert set(out["author"]) == {"spam", "c"}
     assert {"clean_text", "language"} <= set(out.columns)
+
+
+def test_telugu_script_detected():
+    assert detect_language("చంద్రబాబు కుట్రలో ఎన్నికల సంఘం భాగం ఉంది") == "te"
+
+
+def test_labels_stay_inside_allowed_set():
+    from socintel.clean import ALLOWED_LANGS
+    weird = ["Cbn nunchi ade order vachinattu vundhi puneetha ki",
+             "2021 lo manam chesindhi kuda telusu kada",
+             "ARE HAIGH COURT SUPREME COURT SEC KI TELIYADHA A COURT ORDER"]
+    for w in weird:
+        assert detect_language(w) in set(ALLOWED_LANGS) | {"und"}
+
+
+def test_topic_text_drops_emoji_but_clean_text_keeps_them():
+    from socintel.clean import topic_text
+    raw = "Mbappe is unreal \U0001F602\U0001F602 see https://x.com/a"
+    assert topic_text(raw) == "Mbappe is unreal see"
+    assert "face with tears of joy" in clean_text(raw)
+
+
+def test_topic_text_empty_for_emoji_only():
+    from socintel.clean import topic_text
+    assert topic_text("\U0001F602\U0001F602\U0001F602") == ""
+    assert topic_text(None) == ""
+
+
+def test_topic_text_drops_user_placeholder():
+    from socintel.clean import topic_text
+    assert "user" not in topic_text("@user thanks for this @user").split()

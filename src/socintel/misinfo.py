@@ -29,27 +29,54 @@ def _finish(d, binary):
     return d[["text", "y", "label_name"]]
 
 
+HF_LABEL_ORDER = ["false", "half-true", "mostly-true", "true", "barely-true", "pants-fire"]  # HF ClassLabel order
+
+MANUAL_MSG = """Could not load LIAR automatically.
+Download the original release (liar_dataset.zip, by William Yang Wang, UCSB - the paper's
+dataset page links it; it is also mirrored on Kaggle), unzip it, and put
+train.tsv, valid.tsv and test.tsv into the folder  data/liar/  then run this stage again."""
+
+
+def _from_hf(df, names, binary):
+    """HF frames have an int 'label'; names says which int is which class (taken from the
+    dataset's own ClassLabel when available so we never guess the order)."""
+    d = df.rename(columns={"statement": "text"}).copy()
+    d["label_name"] = d["label"].map(dict(enumerate(names)))
+    return _finish(d, binary)
+
+
 def load_liar(binary=True, local_dir="data/liar"):
     """returns {'train','val','test'} frames with columns text, y, label_name.
 
-    Preferred: the original TSVs (train.tsv, valid.tsv, test.tsv) from the LIAR release
-    dropped into data/liar/. Fallback: the Hugging Face copy, if the installed `datasets`
-    version can still load it.
+    Order tried: 1) original TSVs in data/liar/  2) Hugging Face (plain), 3) Hugging Face's
+    auto-converted parquet branch (needed because newer `datasets` can't run the old loading
+    script), 4) a clear error telling you how to download it by hand.
     """
     import os
     files = {"train": "train.tsv", "val": "valid.tsv", "test": "test.tsv"}
     if all(os.path.exists(os.path.join(local_dir, f)) for f in files.values()):
+        # label column forced to str: pandas would otherwise turn a column of only 'false'/'true' into booleans
         return {k: _finish(pd.read_csv(os.path.join(local_dir, f), sep="\t", header=None,
-                                       names=LIAR_TSV_COLS), binary)
+                                       names=LIAR_TSV_COLS, dtype={"label_name": str}), binary)
                 for k, f in files.items()}
+
     from datasets import load_dataset
-    ds = load_dataset("ucsbnlp/liar")
-    frames = {}
-    for split_hf, name in [("train", "train"), ("validation", "val"), ("test", "test")]:
-        d = ds[split_hf].to_pandas()
-        d["label_name"] = d["label"].map(dict(enumerate(LIAR_LABELS)))
-        frames[name] = _finish(d.rename(columns={"statement": "text"}), binary)
-    return frames
+    ds, last = None, None
+    for kwargs in ({}, {"revision": "refs/convert/parquet"}):
+        try:
+            ds = load_dataset("ucsbnlp/liar", **kwargs)
+            break
+        except Exception as e:                       # noqa: BLE001 - any failure -> try next route
+            last = e
+    if ds is None:
+        raise RuntimeError(MANUAL_MSG) from last
+
+    try:
+        names = ds["train"].features["label"].names
+    except Exception:                                # no ClassLabel metadata on this copy
+        names = HF_LABEL_ORDER
+    return {name: _from_hf(ds[split].to_pandas(), names, binary)
+            for split, name in [("train", "train"), ("validation", "val"), ("test", "test")]}
 
 
 def baseline_model(max_features=50000):
