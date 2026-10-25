@@ -15,7 +15,7 @@ Reddit collection is built in but **switched off**, because Reddit requires appr
 |---|---|---|
 | 1. Collect | YouTube videos + comments + replies, raw JSON on disk (Reddit collector available but disabled) | YouTube Data API v3, PRAW |
 | 2. Clean | strip URLs/mentions/markdown, emojis turned into words, language detection, dedupe | `emoji`, `py3langid` (Spark NLP version in `spark_stage.py`) |
-| 3. Sentiment | multilingual negative/neutral/positive, tracked per day | `cardiffnlp/twitter-xlm-roberta-base-sentiment` |
+| 3. Sentiment | multilingual negative/neutral/positive, tracked per week | `cardiffnlp/twitter-xlm-roberta-base-sentiment` |
 | 4. Topics | topic discovery and topics over time | BERTopic + multilingual MiniLM embeddings |
 | 5. Graph | who replies to whom, PageRank influencers, Louvain communities | NetworkX, Neo4j |
 | 6. Misinformation | claim classifier trained on LIAR (TF-IDF + LogReg baseline, optional DistilBERT) | scikit-learn, transformers |
@@ -31,7 +31,8 @@ python -m venv .venv && source .venv/bin/activate
 pip install -r requirements.txt
 
 cp .env.example .env            # add YOUTUBE_API_KEY and an AUTHOR_SALT (any random string)
-docker compose up -d            # Elasticsearch :9200, Kibana :5601, Neo4j :7474
+docker compose up -d            # Elasticsearch :9200, Kibana :5601
+docker compose --profile graph up -d neo4j   # optional, Neo4j :7474 (heavy on small machines)
 ```
 
 Credentials: a YouTube Data API v3 key from Google Cloud Console. Reddit credentials are only needed if Reddit
@@ -54,7 +55,7 @@ python -m socintel.run_pipeline all        # clean -> sentiment -> topics -> gra
 # or one at a time:
 python -m socintel.run_pipeline clean sentiment
 
-python scripts/setup_kibana.py             # creates the data view; then follow docs/kibana.md
+python scripts/setup_kibana.py --import kibana/dashboards.ndjson   # data view + dashboards (docs/kibana.md)
 ```
 
 Intermediate files go to `data/processed/`. All headline numbers are written to `data/processed/metrics.json`.
@@ -114,7 +115,24 @@ config.yaml     subreddits, queries, model names, thresholds
 
 ## Results
 
-See `docs/results.md` (numbers come from `data/processed/metrics.json` after a run).
+Full numbers and discussion in `docs/results.md`; every figure comes from `data/processed/metrics.json`.
+
+Headline (11,233 YouTube comments, 299 videos, 12 search queries in 6 languages):
+
+| | |
+|---|---|
+| Sentiment, TweetEval (EN tweets) | accuracy 0.661, macro-F1 0.660 |
+| Sentiment, Amazon reviews, 6 languages | accuracy 0.629 to 0.688, macro-F1 0.525 to 0.584 |
+| Sentiment vs hand labels on our own comments | accuracy 0.73, macro-F1 0.695 (n = 100) |
+| Topics (BERTopic) | 95 topics, 37.5% of comments left as outliers |
+| Misinformation, LIAR test (TF-IDF + LogReg) | accuracy 0.632, F1 0.579, ROC-AUC 0.671 |
+| Elasticsearch | 11,233 docs indexed, 0 errors, about 2,300 docs/s, sample query 72 ms |
+| SNAP subreddit graph | 54,075 nodes, 234,792 edges, modularity 0.47 |
+
+Caveats worth knowing before reading anything into the charts: 39% of the comments fall in the last week of
+collection (YouTube search returns recent videos), so the time series is dominated by that week; the comment-reply
+graph is very fragmented (434 components, the largest holding 52 users); and the misinformation score reflects
+LIAR's political-statement style, not truth.
 
 ## Next steps
 
