@@ -24,7 +24,7 @@ def arrow(x1, y1, x2, y2):
 
 
 # sources
-box(0.2, 4.6, 2.0, 0.9, "Reddit API", "PRAW", "#fde4cf")
+box(0.2, 4.6, 2.0, 0.9, "Reddit API (off)", "needs approval", "#eeeeee")
 box(0.2, 3.3, 2.0, 0.9, "YouTube API", "Data API v3", "#fde4cf")
 box(0.2, 2.0, 2.0, 0.9, "LIAR dataset", "labels for misinfo", "#e6f2d9")
 # raw + clean
@@ -35,7 +35,7 @@ box(8.1, 5.2, 2.2, 0.85, "Sentiment", "XLM-R (multilingual)")
 box(8.1, 4.1, 2.2, 0.85, "Topics", "BERTopic")
 box(8.1, 3.0, 2.2, 0.85, "Graph", "NetworkX + Neo4j")
 box(8.1, 1.9, 2.2, 0.85, "Misinformation", "TF-IDF + LogReg")
-box(8.1, 0.55, 2.2, 0.85, "Alerts", "spikes, risky influencers", "#f9e0e0")
+box(8.1, 0.55, 2.2, 0.85, "Alerts", "neg. spikes, flagged content", "#f9e0e0")
 # sink
 box(10.9, 3.6, 2.0, 1.0, "Elasticsearch", "socintel-posts", "#e9dff5")
 box(10.9, 1.9, 2.0, 1.0, "Kibana", "search, trends, alerts", "#e9dff5")
