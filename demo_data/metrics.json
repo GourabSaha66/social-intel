@@ -1,0 +1,181 @@
+{
+  "clean": {
+    "rows": 11233,
+    "languages": {
+      "en": 7428,
+      "und": 1517,
+      "pt": 526,
+      "de": 423,
+      "mr": 296,
+      "hi": 271,
+      "id": 235,
+      "es": 133,
+      "ko": 80,
+      "ru": 65
+    }
+  },
+  "sentiment": {
+    "label_share": {
+      "negative": 0.48535564853556484,
+      "neutral": 0.29057242054660376,
+      "positive": 0.2240719309178314
+    },
+    "docs_per_sec": 18.2
+  },
+  "sentiment_tweeteval": {
+    "accuracy": 0.661,
+    "macro_f1": 0.6603425450752102
+  },
+  "topics": {
+    "n_topics": 95,
+    "outlier_share": 0.3749666162200659
+  },
+  "graph": {
+    "nodes": 9739,
+    "edges": 10050,
+    "density": 0.00010596975389141498,
+    "n_components": 121,
+    "largest_component_nodes": 1696,
+    "largest_component_share": 0.1741451894445015,
+    "modularity": 0.9818968002711135
+  },
+  "misinfo_baseline": {
+    "val": {
+      "accuracy": 0.6222741433021807,
+      "precision": 0.6065040650406504,
+      "recall": 0.6055194805194806,
+      "f1": 0.6060113728675873,
+      "confusion_matrix": [
+        [
+          426,
+          242
+        ],
+        [
+          243,
+          373
+        ]
+      ],
+      "roc_auc": 0.6679538649972782
+    },
+    "test": {
+      "accuracy": 0.6322020520915549,
+      "precision": 0.5786618444846293,
+      "recall": 0.5786618444846293,
+      "f1": 0.5786618444846293,
+      "confusion_matrix": [
+        [
+          481,
+          233
+        ],
+        [
+          233,
+          320
+        ]
+      ],
+      "roc_auc": 0.671471120093607
+    }
+  },
+  "misinfo_top_features": {
+    "truthful": [
+      "than",
+      "countries",
+      "since",
+      "day",
+      "georgia",
+      "percent",
+      "more",
+      "million",
+      "debt",
+      "still",
+      "average",
+      "he",
+      "of",
+      "and",
+      "times"
+    ],
+    "misleading": [
+      "wisconsin",
+      "obama",
+      "rep",
+      "illegals",
+      "obamacare",
+      "of those",
+      "this is",
+      "government",
+      "group",
+      "scott walker",
+      "will",
+      "million from",
+      "four years",
+      "muslim",
+      "about the"
+    ]
+  },
+  "graph_replies_only": {
+    "nodes": 1492,
+    "edges": 1085,
+    "density": 0.0004877342697831313,
+    "n_components": 434,
+    "largest_component_nodes": 52,
+    "largest_component_share": 0.03485254691689008,
+    "modularity": 0.9891334741598109
+  },
+  "alerts": {
+    "negative_spikes": 9,
+    "flagged_high_reach": 21,
+    "eligible_buckets": 76,
+    "freq": "W",
+    "min_posts": 15
+  },
+  "elasticsearch": {
+    "indexed": 11233,
+    "errors": 0,
+    "docs_per_sec": 2326.4,
+    "sample_query_ms": 72.1
+  },
+  "bench_tweeteval": {
+    "accuracy": 0.661,
+    "macro_f1": 0.6603425450752102
+  },
+  "bench_amazon_by_language": {
+    "en": {
+      "accuracy": 0.688,
+      "macro_f1": 0.5837441530092512,
+      "n": 1000
+    },
+    "de": {
+      "accuracy": 0.653,
+      "macro_f1": 0.5281761076817185,
+      "n": 1000
+    },
+    "es": {
+      "accuracy": 0.669,
+      "macro_f1": 0.576167711984591,
+      "n": 1000
+    },
+    "fr": {
+      "accuracy": 0.686,
+      "macro_f1": 0.5527866775367775,
+      "n": 1000
+    },
+    "ja": {
+      "accuracy": 0.665,
+      "macro_f1": 0.5621911210643605,
+      "n": 1000
+    },
+    "zh": {
+      "accuracy": 0.629,
+      "macro_f1": 0.5248768477900542,
+      "n": 1000
+    }
+  },
+  "bench_snap_graph": {
+    "nodes": 54075,
+    "edges": 234792,
+    "density": 8.029680598483293e-05,
+    "n_components": 758,
+    "largest_component_nodes": 52468,
+    "largest_component_share": 0.9702820157189089,
+    "modularity": 0.46593862411415676
+  }
+}

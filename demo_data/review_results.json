@@ -1,0 +1,42 @@
+{
+  "sentiment": {
+    "n": 100,
+    "accuracy": 0.73,
+    "macro_f1": 0.695,
+    "human_share": {
+      "negative": 0.53,
+      "positive": 0.24,
+      "neutral": 0.23
+    },
+    "model_share": {
+      "negative": 0.52,
+      "neutral": 0.26,
+      "positive": 0.22
+    },
+    "confusion_rows_human_cols_model": [
+      [
+        43,
+        8,
+        2
+      ],
+      [
+        5,
+        14,
+        4
+      ],
+      [
+        4,
+        4,
+        16
+      ]
+    ]
+  },
+  "flagged": {
+    "n": 21,
+    "counts": {
+      "other": 9,
+      "opinion": 7,
+      "misleading": 5
+    }
+  }
+}

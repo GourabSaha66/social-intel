@@ -138,3 +138,10 @@ LIAR's political-statement style, not truth.
 
 Fine-tune the misinformation model on in-domain labelled posts; add sentiment evaluation per language; stream
 collection instead of batch; build the Kibana alert rule into Watcher/Slack notifications.
+
+## Public demo
+
+A small Streamlit app (`app/streamlit_app.py`) shows the measured results from `demo_data/` (aggregate numbers only:
+no comment text, no user ids). Rebuild the data after a pipeline run with `python scripts/export_demo_data.py`, run it
+locally with `pip install -r app/requirements.txt` and `streamlit run app/streamlit_app.py`, or deploy it on
+Streamlit Community Cloud (main file `app/streamlit_app.py`).
